@@ -16,6 +16,10 @@ import '../../features/cases/presentation/screens/patient_cases_screen.dart';
 import '../../features/cases/presentation/screens/case_detail_screen.dart';
 import '../../features/consultations/presentation/screens/consultation_screen.dart';
 import '../../features/medical_history/presentation/screens/medical_history_screen.dart';
+import '../../features/profile/presentation/screens/profile_overview_screen.dart';
+import '../../features/profile/presentation/screens/edit_personal_info_screen.dart';
+import '../../features/profile/presentation/screens/edit_medical_data_screen.dart';
+import '../../features/profile/presentation/screens/manage_specialties_screen.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -177,6 +181,22 @@ class AppRouter {
             patientName: extra['patientName'] as String,
           );
         },
+      ),
+      GoRoute(
+        path: '/profile',
+        builder: (context, state) => const ProfileOverviewScreen(),
+      ),
+      GoRoute(
+        path: '/profile/personal',
+        builder: (context, state) => const EditPersonalInfoScreen(),
+      ),
+      GoRoute(
+        path: '/profile/medical',
+        builder: (context, state) => const EditMedicalDataScreen(),
+      ),
+      GoRoute(
+        path: '/profile/specialties',
+        builder: (context, state) => const ManageSpecialtiesScreen(),
       ),
     ],
   );

@@ -39,6 +39,10 @@ import '../../features/consultations/data/datasources/consultation_remote_data_s
 import '../../features/consultations/data/repositories/consultation_repository_impl.dart';
 import '../../features/consultations/domain/repositories/consultation_repository.dart';
 import '../../features/consultations/presentation/bloc/consultation_bloc.dart';
+import '../../features/profile/data/datasources/profile_remote_data_source.dart';
+import '../../features/profile/data/repositories/profile_repository_impl.dart';
+import '../../features/profile/domain/repositories/profile_repository.dart';
+import '../../features/profile/presentation/bloc/profile_bloc.dart';
 import '../routes/app_router.dart';
 
 final sl = GetIt.instance;
@@ -137,6 +141,15 @@ Future<void> init() async {
   );
   sl.registerLazySingleton<ConsultationRemoteDataSource>(
     () => ConsultationRemoteDataSourceImpl(apiClient: sl()),
+  );
+
+  // Features - Profile
+  sl.registerFactory(() => ProfileBloc(repository: sl()));
+  sl.registerLazySingleton<ProfileRepository>(
+    () => ProfileRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton<ProfileRemoteDataSource>(
+    () => ProfileRemoteDataSourceImpl(apiClient: sl()),
   );
 
   // Core

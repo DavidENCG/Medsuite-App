@@ -217,11 +217,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _roleId = session.roleId ?? _roleId; 
     _activeClinicId = session.activeClinicId ?? _activeClinicId;
     _fullName = session.fullName ?? _fullName;
-    _activeClinicName = session.activeClinicName ?? _activeClinicName;
+    _activeClinicName = (session.activeClinicName != null && session.activeClinicName!.isNotEmpty) 
+        ? session.activeClinicName 
+        : _activeClinicName;
     _tokenTemporal = session.tokenTemporal ?? _tokenTemporal;
     _clinics = (session.clinics != null && session.clinics!.isNotEmpty) 
         ? session.clinics! 
         : _clinics;
+
+    // RECUPERACIÓN DE NOMBRE: Si tenemos ID pero no el nombre
+    if ((_activeClinicName == null || _activeClinicName!.isEmpty) && _activeClinicId != null && _clinics.isNotEmpty) {
+      try {
+        final matched = _clinics.firstWhere((c) => c.id == _activeClinicId);
+        _activeClinicName = matched.nombre;
+      } catch (_) {}
+    }
 
     print('--- AUTH DEBUG ---');
     print('Clinic Name: $_activeClinicName');

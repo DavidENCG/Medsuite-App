@@ -15,6 +15,7 @@ import 'features/patients/presentation/bloc/privacy_bloc.dart';
 import 'features/cases/presentation/bloc/case_bloc.dart';
 import 'features/medical_history/presentation/bloc/medical_history_bloc.dart';
 import 'features/consultations/presentation/bloc/consultation_bloc.dart';
+import 'features/profile/presentation/bloc/profile_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -68,6 +69,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => di.sl<ConsultationBloc>(),
+        ),
+        BlocProvider(
+          create: (_) => di.sl<ProfileBloc>(),
         ),
       ],
       child: MaterialApp.router(

@@ -134,6 +134,40 @@ class _ProfileDrawer extends StatelessWidget {
                   context.push('/select-clinic');
                 },
               ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.person_outline),
+                title: const Text('Mi Perfil'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/profile');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.badge_outlined),
+                title: const Text('Información Personal'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/profile/personal');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.medical_services_outlined),
+                title: const Text('Datos Médicos'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/profile/medical');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.assignment_outlined),
+                title: const Text('Especialidades'),
+                onTap: () {
+                  Navigator.pop(context);
+                  context.push('/profile/specialties');
+                },
+              ),
+              const Divider(),
               ListTile(
                 leading: const Icon(Icons.lock_outline),
                 title: const Text('Seguridad'),

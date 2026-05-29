@@ -1,5 +1,6 @@
 import '../datasources/consultation_remote_data_source.dart';
 import '../../domain/entities/consultation_detail.dart';
+import '../../domain/entities/consultation_catalog.dart';
 import '../../domain/repositories/consultation_repository.dart';
 import '../models/consultation_detail_model.dart';
 
@@ -15,7 +16,22 @@ class ConsultationRepositoryImpl implements ConsultationRepository {
   }
 
   @override
-  Future<bool> saveConsultation(ConsultationDetail consultation) async {
+  Future<ConsultationCatalog> getCatalogs() async {
+    return await _remoteDataSource.getCatalogs();
+  }
+
+  @override
+  Future<List<int>> downloadPrescription(int citaId) async {
+    return await _remoteDataSource.downloadPrescription(citaId);
+  }
+
+  @override
+  Future<List<int>> downloadReport(int citaId, Map<String, bool> sections) async {
+    return await _remoteDataSource.downloadReport(citaId, sections);
+  }
+
+  @override
+  Future<ConsultationDetail?> saveConsultation(ConsultationDetail consultation) async {
     // Convert entity strictly to model for serialization to avoid casting crashes
     final model = ConsultationDetailModel(
       citaId: consultation.citaId,
@@ -30,27 +46,49 @@ class ConsultationRepositoryImpl implements ConsultationRepository {
       ),
       enfermedadActual: ClinicalSectionModel(
         descripcion: consultation.enfermedadActual.descripcion,
-        codigoCIE10: consultation.enfermedadActual.codigoCIE10,
-        medicamentos: consultation.enfermedadActual.medicamentos,
-        indicaciones: consultation.enfermedadActual.indicaciones,
+        sintomasPrincipales: consultation.enfermedadActual.sintomasPrincipales,
       ),
-      examenFisico: ClinicalSectionModel(
-        descripcion: consultation.examenFisico.descripcion,
-        codigoCIE10: consultation.examenFisico.codigoCIE10,
-        medicamentos: consultation.examenFisico.medicamentos,
-        indicaciones: consultation.examenFisico.indicaciones,
+      examenFisico: PhysicalExamModel(
+        cabezaCuello: consultation.examenFisico.cabezaCuello,
+        torax: consultation.examenFisico.torax,
+        abdomen: consultation.examenFisico.abdomen,
+        extremidades: consultation.examenFisico.extremidades,
+        neurologico: consultation.examenFisico.neurologico,
+        piel: consultation.examenFisico.piel,
+        genitourinario: consultation.examenFisico.genitourinario,
+        observaciones: consultation.examenFisico.observaciones,
       ),
       diagnostico: ClinicalSectionModel(
         descripcion: consultation.diagnostico.descripcion,
         codigoCIE10: consultation.diagnostico.codigoCIE10,
-        medicamentos: consultation.diagnostico.medicamentos,
-        indicaciones: consultation.diagnostico.indicaciones,
       ),
-      receta: ClinicalSectionModel(
+      indicaciones: consultation.indicaciones.map((e) => IndicationItemModel(
+        medicamento: e.medicamento,
+        dosis: e.dosis,
+        frecuencia: e.frecuencia,
+        viaAdministracion: e.viaAdministracion,
+        duracionDias: e.duracionDias,
+        indicaciones: e.indicaciones,
+        fechaInicio: e.fechaInicio,
+      )).toList(),
+      examenesSolicitados: consultation.examenesSolicitados.map((e) => ExamRequestItemModel(
+        nombreExamen: e.nombreExamen,
+        tipoExamen: e.tipoExamen,
+        indicaciones: e.indicaciones,
+      )).toList(),
+      receta: PrescriptionModel(
         descripcion: consultation.receta.descripcion,
-        codigoCIE10: consultation.receta.codigoCIE10,
-        medicamentos: consultation.receta.medicamentos,
         indicaciones: consultation.receta.indicaciones,
+        fechaEmision: consultation.receta.fechaEmision,
+        fechaVencimiento: consultation.receta.fechaVencimiento,
+      ),
+      informe: MedicalReportModel(
+        titulo: consultation.informe.titulo,
+        resumen: consultation.informe.resumen,
+        conclusiones: consultation.informe.conclusiones,
+        recomendaciones: consultation.informe.recomendaciones,
+        fechaInforme: consultation.informe.fechaInforme,
+        adjuntoUrl: consultation.informe.adjuntoUrl,
       ),
     );
     return await _remoteDataSource.saveConsultation(model);

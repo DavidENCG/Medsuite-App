@@ -56,8 +56,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                         if (authState is Authenticated) {
                           doctorName = authState.fullName ?? 'Médico';
-                          clinicName = authState.activeClinicName;
+                          clinicName = (authState.activeClinicName != null && authState.activeClinicName!.isNotEmpty) 
+                              ? authState.activeClinicName 
+                              : null;
                         }
+
+                        final hasClinic = clinicName != null && clinicName.isNotEmpty;
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,14 +77,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.location_on_rounded, size: 14, color: clinicName != null ? primaryBlue : Colors.grey),
+                                Icon(Icons.location_on_rounded, size: 14, color: hasClinic ? primaryBlue : Colors.grey),
                                 const SizedBox(width: 4),
                                 Text(
-                                  clinicName ?? 'Consultorio no especificado',
+                                  hasClinic ? clinicName! : 'Consultorio no especificado',
                                   style: GoogleFonts.inter(
                                     fontSize: 13,
-                                    color: clinicName != null ? primaryBlue : Colors.grey.shade600,
-                                    fontWeight: clinicName != null ? FontWeight.w600 : FontWeight.normal,
+                                    color: hasClinic ? primaryBlue : Colors.grey.shade600,
+                                    fontWeight: hasClinic ? FontWeight.w600 : FontWeight.normal,
                                   ),
                                 ),
                               ],
@@ -147,44 +151,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: summary.upcomingAppointments.length,
-                      itemBuilder: (context, index) {
-                        final appointment = summary.upcomingAppointments[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.grey.shade200),
+                    if (summary.upcomingAppointments.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.calendar_today_outlined,
+                                size: 60,
+                                color: Colors.grey.shade300,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Aún no hay citas registradas',
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  color: Colors.grey.shade500,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            leading: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: primaryBlue.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: summary.upcomingAppointments.length,
+                        itemBuilder: (context, index) {
+                          final appointment = summary.upcomingAppointments[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(color: Colors.grey.shade200),
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              leading: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: primaryBlue.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.access_time, color: primaryBlue),
                               ),
-                              child: const Icon(Icons.access_time, color: primaryBlue),
-                            ),
-                            title: Text(
-                              appointment['patient'],
-                              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(appointment['type']),
-                            trailing: Text(
-                              appointment['time'],
-                              style: GoogleFonts.inter(
-                                fontWeight: FontWeight.bold,
-                                color: primaryBlue,
+                              title: Text(
+                                appointment['patient'],
+                                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                               ),
-                            ),
-                          ),                        );
-                      },
-                    ),
+                              subtitle: Text(appointment['type']),
+                              trailing: Text(
+                                appointment['time'],
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.bold,
+                                  color: primaryBlue,
+                                ),
+                              ),
+                            ),                        );
+                        },
+                      ),
                   ],
                 ),
               ),
