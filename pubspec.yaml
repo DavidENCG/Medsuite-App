@@ -48,7 +48,10 @@ dependencies:
   connectivity_plus: ^7.1.1
   mobile_scanner: ^7.2.0
   intl: ^0.20.2
-  open_file_plus: ^3.4.1+1
+  open_file_plus:
+    git:
+      url: https://github.com/postflow/open_file_plus.git
+      ref: main
 
 dev_dependencies:
   flutter_test:
