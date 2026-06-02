@@ -7,6 +7,11 @@ import '../../../appointments/presentation/screens/agenda_screen.dart';
 import '../../../dashboard/presentation/screens/dashboard_screen.dart';
 import '../../../patients/presentation/screens/patient_directory_screen.dart';
 
+class SwitchTabNotification extends Notification {
+  final int index;
+  SwitchTabNotification(this.index);
+}
+
 class MainShellScreen extends StatefulWidget {
   const MainShellScreen({super.key});
 
@@ -51,9 +56,17 @@ class _MainShellScreenState extends State<MainShellScreen> {
         ],
       ),
       drawer: const _ProfileDrawer(),
-      body: IndexedStack(
-        index: _selectedIndex,
-        children: _screens,
+      body: NotificationListener<SwitchTabNotification>(
+        onNotification: (notification) {
+          setState(() {
+            _selectedIndex = notification.index;
+          });
+          return true;
+        },
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: _screens,
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

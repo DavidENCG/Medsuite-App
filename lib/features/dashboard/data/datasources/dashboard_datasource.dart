@@ -1,3 +1,5 @@
+import 'package:flutter/widgets.dart';
+
 import '../../../../core/network/api_client.dart';
 import '../models/dashboard_summary_model.dart';
 
@@ -13,47 +15,36 @@ class DashboardDataSourceImpl implements DashboardDataSource {
   @override
   Future<DashboardSummaryModel> getSummary() async {
     try {
-      print('NETWORK: GET /api/Dashboard/summary');
       final response = await _apiClient.get('/api/Dashboard/summary');
       
-      print('NETWORK: Dashboard Status: ${response.statusCode}');
-      print('NETWORK: Dashboard Raw Data: ${response.data}');
-
       final rawData = response.data;
       if (rawData is Map) {
         final Map<String, dynamic> resData = Map<String, dynamic>.from(rawData);
-        if (resData['success'] == true || resData['Success'] == true) {
+        
+        // Si la respuesta contiene directamente llaves de resumen, las usamos
+        final bool hasDirectKeys = resData.containsKey('appointmentsToday') || 
+                                  resData.containsKey('citasHoy') ||
+                                  resData.containsKey('upcomingAppointments') ||
+                                  resData.containsKey('proximasCitas');
+
+        // Consideramos éxito si tiene éxito explícito o si tiene las llaves de datos directamente
+        final bool isSuccess = resData['success'] == true || resData['Success'] == true || hasDirectKeys;
+        
+        if (isSuccess) {
           final payload = resData['data'] ?? resData['Data'] ?? resData;
           return DashboardSummaryModel.fromJson(Map<String, dynamic>.from(payload));
         }
       }
+      
+      // Si el status es exitoso pero no podemos mapear un objeto claro, devolvemos modelo vacío
+      if (response.statusCode != null && response.statusCode! >= 200 && response.statusCode! < 300) {
+         return const DashboardSummaryModel();
+      }
+      
       throw Exception('Respuesta inválida del servidor');
     } catch (e) {
-      // Si falla (porque aún no existe el endpoint), devolvemos datos de prueba profesionales
-      await Future.delayed(const Duration(seconds: 1));
-      return const DashboardSummaryModel(
-        appointmentsToday: 8,
-        newPatientsThisMonth: 12,
-        pendingMedicalRecords: 3,
-        monthlyRevenue: 2450.0,
-        upcomingAppointments: [
-          {
-            'time': '09:00 AM',
-            'patient': 'Juan Pérez',
-            'type': 'Consulta General',
-          },
-          {
-            'time': '10:30 AM',
-            'patient': 'María García',
-            'type': 'Seguimiento',
-          },
-          {
-            'time': '02:00 PM',
-            'patient': 'Carlos Ruiz',
-            'type': 'Control Post-Operatorio',
-          },
-        ],
-      );
+      debugPrint('DASHBOARD_ERROR: $e');
+      return const DashboardSummaryModel();
     }
   }
 }

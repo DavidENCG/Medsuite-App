@@ -5,6 +5,7 @@ import 'dart:async';
 import '../bloc/patient_bloc.dart';
 import '../widgets/patient_quick_profile_sheet.dart';
 import 'camera_scanner_screen.dart';
+import 'create_patient_screen.dart';
 
 class PatientDirectoryScreen extends StatefulWidget {
   const PatientDirectoryScreen({super.key});
@@ -45,6 +46,19 @@ class _PatientDirectoryScreenState extends State<PatientDirectoryScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const CreatePatientScreen()),
+          );
+          if (result == true && mounted) {
+            context.read<PatientBloc>().add(FetchMyPatients());
+          }
+        },
+        backgroundColor: primaryBlue,
+        child: const Icon(Icons.person_add, color: Colors.white),
+      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -132,7 +146,6 @@ class _PatientDirectoryScreenState extends State<PatientDirectoryScreen> {
                               MaterialPageRoute(builder: (_) => const CameraScannerScreen()),
                             );
                             if (result != null) {
-                              // Si escaneó y autorizó, mostramos el perfil directamente
                               _showQuickProfile(result);
                             }
                           },

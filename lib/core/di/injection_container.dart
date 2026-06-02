@@ -27,6 +27,7 @@ import '../../features/patients/domain/repositories/privacy_repository.dart';
 import '../../features/patients/presentation/bloc/patient_bloc.dart';
 import '../../features/patients/presentation/bloc/patient_detail_bloc.dart';
 import '../../features/patients/presentation/bloc/privacy_bloc.dart';
+import '../../features/patients/presentation/bloc/register_patient_bloc.dart';
 import '../../features/cases/data/datasources/case_remote_data_source.dart';
 import '../../features/cases/data/repositories/case_repository_impl.dart';
 import '../../features/cases/domain/repositories/case_repository.dart';
@@ -43,6 +44,7 @@ import '../../features/profile/data/datasources/profile_remote_data_source.dart'
 import '../../features/profile/data/repositories/profile_repository_impl.dart';
 import '../../features/profile/domain/repositories/profile_repository.dart';
 import '../../features/profile/presentation/bloc/profile_bloc.dart';
+import '../../features/auth/presentation/bloc/registration/registration_bloc.dart';
 import '../routes/app_router.dart';
 
 final sl = GetIt.instance;
@@ -53,6 +55,8 @@ Future<void> init() async {
 
   // Features - Auth
   sl.registerLazySingleton(() => AuthBloc(authRepository: sl()));
+  sl.registerFactory(() => RegistrationBloc(authRepository: sl()));
+  sl.registerFactory(() => RegisterPatientBloc(repository: sl()));
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
       remoteDataSource: sl(),
@@ -67,7 +71,10 @@ Future<void> init() async {
   // Features - Dashboard
   sl.registerFactory(() => DashboardBloc(repository: sl()));
   sl.registerLazySingleton<DashboardRepository>(
-    () => DashboardRepositoryImpl(dataSource: sl()),
+    () => DashboardRepositoryImpl(
+      dataSource: sl(),
+      appointmentRepository: sl(),
+    ),
   );
   sl.registerLazySingleton<DashboardDataSource>(
     () => DashboardDataSourceImpl(apiClient: sl()),

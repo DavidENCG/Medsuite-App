@@ -76,8 +76,8 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
       },
       builder: (context, state) {
         if (state is ConsultationLoading && _currentDetail == null) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator(color: Color(0xFF1b448c))),
+          return Scaffold(
+            body: Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor)),
           );
         }
 
@@ -92,15 +92,15 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
             if (state is ConsultationDownloading)
               Container(
                 color: Colors.black26,
-                child: const Center(
+                child: Center(
                   child: Card(
-                    margin: EdgeInsets.all(24),
+                    margin: const EdgeInsets.all(24),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(color: Color(0xFF1b448c)),
-                        SizedBox(height: 16),
-                        Text("Generando Documento...", style: TextStyle(fontWeight: FontWeight.bold)),
+                        CircularProgressIndicator(color: Theme.of(context).primaryColor),
+                        const SizedBox(height: 16),
+                        const Text("Generando Documento...", style: TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -113,6 +113,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
   }
 
   Widget _buildContent(ConsultationDetail detail, ConsultationCatalog catalog) {
+    final primaryColor = Theme.of(context).primaryColor;
     return CustomScrollView(
       slivers: [
         _buildSliverAppBar(detail),
@@ -128,9 +129,9 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
             TabBar(
               controller: _tabController,
               isScrollable: true,
-              labelColor: const Color(0xFF1b448c),
+              labelColor: const Color(0xFF1B448C),
               unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color(0xFF3BB5AB),
+              indicatorColor: primaryColor,
               indicatorWeight: 3,
               labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14),
               unselectedLabelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 14),
@@ -159,15 +160,22 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
 
   Widget _buildSliverAppBar(ConsultationDetail detail) {
     return SliverAppBar(
-      expandedHeight: 100.0,
+      expandedHeight: 120.0,
       floating: false,
       pinned: true,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
         centerTitle: true,
-        title: Text(
-          "Seguimiento Médico",
-          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Seguimiento Médico",
+              style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
+            ),
+            const SizedBox(height: 4),
+            _buildStatusBadge(detail.estadoCita ?? "Pendiente", detail.citaId ?? widget.citaId),
+          ],
         ),
         background: Container(
           decoration: const BoxDecoration(
@@ -180,25 +188,70 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
         ),
       ),
       leading: IconButton(icon: const Icon(Icons.arrow_back_ios, color: Colors.white), onPressed: () => Navigator.pop(context)),
-      actions: [_buildStatusBadge(detail.estadoCita ?? "Pendiente"), const SizedBox(width: 8)],
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    final bool isAtendida = status.toLowerCase().contains("atendida");
-    return Center(
+  Widget _buildStatusBadge(String status, int citaId) {
+    final bool isAtendida = status.toLowerCase().contains("atendida") || status.toLowerCase().contains("completado");
+    
+    return GestureDetector(
+      onTap: isAtendida ? null : () => _showMarkAsAttendedDialog(citaId),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
         decoration: BoxDecoration(
-          color: isAtendida ? Colors.green.withOpacity(0.2) : Colors.orange.withOpacity(0.2),
+          color: isAtendida ? Colors.green.withOpacity(0.9) : Colors.orange.withOpacity(0.9),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isAtendida ? Colors.green : Colors.orange),
+          border: Border.all(color: Colors.white, width: 1),
         ),
-        child: Text(
-          status,
-          style: GoogleFonts.inter(color: isAtendida ? Colors.green : Colors.orange, fontWeight: FontWeight.bold, fontSize: 11),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isAtendida) const Icon(Icons.touch_app, color: Colors.white, size: 10),
+            if (!isAtendida) const SizedBox(width: 4),
+            Text(
+              status,
+              style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 9),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  void _showMarkAsAttendedDialog(int citaId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Finalizar Atención', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+        content: Text('¿Desea marcar esta cita como Atendida/Completada?', style: GoogleFonts.inter()),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancelar', style: GoogleFonts.inter(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // Cerrar diálogo
+              context.read<AppointmentBloc>().add(
+                UpdateAppointmentStatus(
+                  citaId: citaId,
+                  nuevoEstadoId: 6, // Completado
+                  notas: 'Atendido vía App Móvil - Seguimiento Médico',
+                ),
+              );
+              // Refrescar el detalle de la consulta también para actualizar el badge localmente
+              context.read<ConsultationBloc>().add(FetchConsultationDetail(citaId));
+              MedSuiteToast.show(context, message: "Marcando como atendida...", type: ToastType.info);
+              
+              // Redireccionar a la agenda después de un breve delay para permitir el proceso
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) Navigator.pop(context);
+              });
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: Text('Confirmar', style: GoogleFonts.inter(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
@@ -215,10 +268,10 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: const Color(0xFF1b448c).withOpacity(0.1),
+                  backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
                   child: Text(
                     (detail.pacienteNombre ?? "P").substring(0, 1).toUpperCase(),
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: const Color(0xFF1b448c)),
+                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold, color: Theme.of(context).primaryColor),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -226,12 +279,12 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(detail.pacienteNombre ?? "S/I", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: const Color(0xFF1b448c))),
+                      Text(detail.pacienteNombre ?? "S/I", style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 14, color: Theme.of(context).primaryColor)),
                       Text("ID: ${detail.pacienteCedula ?? 'S/I'}", style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
                     ],
                   ),
                 ),
-                IconButton(icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF3BB5AB)), onPressed: () => _showEditPatientDialog(detail)),
+                IconButton(icon: Icon(Icons.edit_outlined, size: 20, color: Theme.of(context).primaryColor), onPressed: () => _showEditPatientDialog(detail)),
               ],
             ),
             const Divider(height: 16),
@@ -374,7 +427,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1b448c))),
+        Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Theme.of(context).primaryColor)),
         Text(value, style: const TextStyle(fontSize: 13)),
       ]),
     );
@@ -536,7 +589,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
                   _addHallazgoToPhysicalExam(selectedZona!.nombre, "[${selectedExamen!.nombre} - ${selectedZona!.nombre}]: ${detController.text}");
                   Navigator.pop(context);
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1b448c)),
+                style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
                 child: const Text("Añadir", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               )),
               const SizedBox(height: 20),
@@ -696,7 +749,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
                   final newR = Prescription(descripcion: descController.text, indicaciones: instController.text, fechaEmision: now.toString().split(' ')[0], fechaVencimiento: nextMonth.toString().split(' ')[0]);
                   context.read<ConsultationBloc>().add(SaveConsultationRequested(_copyWith(receta: newR)));
                   Navigator.pop(context);
-                }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1b448c)), child: const Text("Guardar Receta", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
+                }, style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor), child: const Text("Guardar Receta", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
             const SizedBox(height: 20),
           ]),
       ),
@@ -731,7 +784,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
                     final newInf = MedicalReport(titulo: titleController.text, resumen: resController.text, conclusiones: concController.text, recomendaciones: recController.text, fechaInforme: DateTime.now().toString().split(' ')[0], adjuntoUrl: inf.adjuntoUrl);
                     context.read<ConsultationBloc>().add(SaveConsultationRequested(_copyWith(informe: newInf)));
                     Navigator.pop(context);
-                  }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1b448c)), child: const Text("Guardar Informe", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
+                  }, style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor), child: const Text("Guardar Informe", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
               const SizedBox(height: 20),
             ]),
         ),
@@ -782,7 +835,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
                   },
                 ));
               },
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1b448c)),
+              style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor),
               child: const Text("Imprimir", style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -796,7 +849,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
       title: Text(title, style: GoogleFonts.inter(fontSize: 14)),
       value: value,
       onChanged: onChanged,
-      activeColor: const Color(0xFF3BB5AB),
+      activeColor: Theme.of(context).primaryColor,
       dense: true,
       controlAffinity: ListTileControlAffinity.leading,
     );
@@ -819,7 +872,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
             if (showCIE10) ...[TextField(controller: cieController, decoration: const InputDecoration(labelText: "Código CIE-10", border: OutlineInputBorder())), const SizedBox(height: 12)],
             TextField(controller: controller, maxLines: 5, decoration: const InputDecoration(hintText: "Escriba aquí...", border: OutlineInputBorder())),
             const SizedBox(height: 24),
-            SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: () { _savePartial(title, controller.text, cieController.text); Navigator.pop(context); }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1b448c)), child: const Text("Guardar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
+            SizedBox(width: double.infinity, height: 50, child: ElevatedButton(onPressed: () { _savePartial(title, controller.text, cieController.text); Navigator.pop(context); }, style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor), child: const Text("Guardar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
             const SizedBox(height: 20),
           ]),
       ),
@@ -872,7 +925,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
                 final newSV = VitalSigns(tensionArterial: tController.text, temperatura: double.tryParse(tempController.text), frecuenciaCardiaca: int.tryParse(fcController.text), frecuenciaRespiratoria: int.tryParse(frController.text), saturacionOxigeno: double.tryParse(satController.text), estaturaCm: double.tryParse(tallaController.text), pesoKg: double.tryParse(pesoController.text));
                 context.read<ConsultationBloc>().add(SaveConsultationRequested(_copyWith(signosVitales: newSV)));
                 Navigator.pop(context);
-              }, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1b448c)), child: const Text("Actualizar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
+              }, style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor), child: const Text("Actualizar", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))),
             const SizedBox(height: 16),
           ]),
       ),
@@ -907,7 +960,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(title, style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16)),
-              Row(children: [if (extraActions != null) ...extraActions, IconButton(icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF3BB5AB)), onPressed: onAdd)]),
+              Row(children: [if (extraActions != null) ...extraActions, IconButton(icon: Icon(Icons.edit_outlined, size: 20, color: Theme.of(context).primaryColor), onPressed: onAdd)]),
             ],
           ),
           const SizedBox(height: 10),
@@ -927,7 +980,7 @@ class _ConsultationScreenState extends State<ConsultationScreen> with SingleTick
           const SizedBox(height: 10),
           Text(message, style: TextStyle(color: Colors.grey[400], fontSize: 12)),
           const SizedBox(height: 16),
-          ElevatedButton.icon(onPressed: onAdd, icon: const Icon(Icons.add, size: 16), label: const Text("Agregar", style: TextStyle(fontSize: 12)), style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1b448c), padding: const EdgeInsets.symmetric(horizontal: 16))),
+          ElevatedButton.icon(onPressed: onAdd, icon: const Icon(Icons.add, size: 16), label: const Text("Agregar", style: TextStyle(fontSize: 12)), style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).primaryColor, padding: const EdgeInsets.symmetric(horizontal: 16))),
         ],
       ),
     );

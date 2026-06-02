@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/utils/medsuite_toast.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bloc/appointment_bloc.dart';
@@ -14,23 +15,132 @@ class AgendaScreen extends StatefulWidget {
 }
 
 class _AgendaScreenState extends State<AgendaScreen> {
+  late DateTime _selectedDate;
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    context.read<AppointmentBloc>().add(FetchDailyAppointments());
+    _selectedDate = DateTime.now();
+    _refreshAppointments();
+  }
+
+  void _refreshAppointments() {
+    context.read<AppointmentBloc>().add(FetchAppointmentsByDate(_selectedDate));
   }
 
   Color _getStatusColor(int estadoId) {
     switch (estadoId) {
-      case 2: return const Color(0xFF10B981); // Atendido - Verde
-      case 1: return const Color(0xFF2563EB); // En Espera - Azul
-      default: return const Color(0xFF94A3B8); // Pendiente - Gris
+      case 2: // Atendido
+      case 6: // Completado
+        return const Color(0xFF10B981); // Verde
+      case 1: // En Espera
+        return const Color(0xFF2563EB); // Azul
+      case 4: // Pendiente
+        return const Color(0xFFEAB308); // Amarillo
+      default:
+        return const Color(0xFF94A3B8); // Otros - Gris
     }
+  }
+
+  Widget _buildCalendarCarousel() {
+    final now = DateTime.now();
+    final primaryColor = Theme.of(context).primaryColor;
+    // Iniciar desde hoy para que sea el primer slot
+    final days = List.generate(30, (index) => now.add(Duration(days: index)));
+
+    return Container(
+      height: 100,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: days.length,
+        padding: const EdgeInsets.symmetric(horizontal: 15),
+        itemBuilder: (context, index) {
+          final day = days[index];
+          // Normalizar fechas para comparación precisa (sin horas)
+          final normalizedDay = DateTime(day.year, day.month, day.day);
+          final normalizedSelected = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+          final normalizedToday = DateTime(now.year, now.month, now.day);
+
+          final isSelected = normalizedDay.isAtSameMomentAs(normalizedSelected);
+          final isToday = normalizedDay.isAtSameMomentAs(normalizedToday);
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedDate = day;
+              });
+              context.read<AppointmentBloc>().add(FetchAppointmentsByDate(day));
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 60,
+              margin: const EdgeInsets.symmetric(horizontal: 5),
+              decoration: BoxDecoration(
+                color: isSelected ? primaryColor : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: primaryColor.withValues(alpha: 0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ]
+                    : [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 5,
+                          offset: const Offset(0, 2),
+                        )
+                      ],
+                border: Border.all(
+                  color: isSelected ? primaryColor : Colors.grey.shade100,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    DateFormat('E', 'es').format(day).toUpperCase(),
+                    style: GoogleFonts.inter(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.white : const Color(0xFF64748B),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    day.day.toString(),
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                    ),
+                  ),
+                  if (isToday && !isSelected)
+                    Container(
+                      margin: const EdgeInsets.only(top: 2),
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF2563EB);
+    final primaryColor = Theme.of(context).primaryColor;
     String doctorName = 'Médico';
     String clinicName = 'Consultorio';
 
@@ -47,7 +157,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
           children: [
             // Header Dinámico Fase 3
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 5),
               child: Row(
                 children: [
                   Expanded(
@@ -55,7 +165,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Agenda de Hoy',
+                          'Agenda',
                           style: GoogleFonts.poppins(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -78,12 +188,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
                       context.read<AppointmentBloc>().add(SyncOfflineChanges());
                       MedSuiteToast.show(context, message: "Sincronizando...", type: ToastType.info);
                     },
-                    icon: const Icon(Icons.sync_rounded, color: primaryBlue),
+                    icon: Icon(Icons.sync_rounded, color: Theme.of(context).primaryColor),
                     tooltip: 'Sincronizar cambios',
                   ),
                 ],
               ),
             ),
+
+            _buildCalendarCarousel(),
 
             // Banner Offline
             BlocBuilder<AppointmentBloc, AppointmentState>(
@@ -113,8 +225,15 @@ class _AgendaScreenState extends State<AgendaScreen> {
             Expanded(
               child: BlocBuilder<AppointmentBloc, AppointmentState>(
                 builder: (context, state) {
+                  if (state is AppointmentsLoaded) {
+                    // Actualizar fecha seleccionada si el estado cambia externamente
+                    if (state.selectedDate != _selectedDate) {
+                      _selectedDate = state.selectedDate;
+                    }
+                  }
+
                   if (state is AppointmentsLoading) {
-                    return const Center(child: CircularProgressIndicator(color: primaryBlue));
+                    return Center(child: CircularProgressIndicator(color: Theme.of(context).primaryColor));
                   }
 
                   if (state is AppointmentsError) {
@@ -126,7 +245,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                           const SizedBox(height: 16),
                           Text('Error al cargar la agenda', style: GoogleFonts.poppins(fontSize: 16)),
                           TextButton(
-                            onPressed: () => context.read<AppointmentBloc>().add(FetchDailyAppointments()),
+                            onPressed: () => context.read<AppointmentBloc>().add(FetchAppointmentsByDate(_selectedDate)),
                             child: const Text('Reintentar'),
                           ),
                         ],
@@ -142,7 +261,10 @@ class _AgendaScreenState extends State<AgendaScreen> {
                           children: [
                             Icon(Icons.calendar_today_outlined, size: 80, color: Colors.grey.shade300),
                             const SizedBox(height: 16),
-                            Text('No hay citas programadas para hoy', style: GoogleFonts.inter(color: Colors.grey)),
+                            Text(
+                              'No hay citas programadas para el ${DateFormat('dd/MM/yyyy').format(state.selectedDate)}', 
+                              style: GoogleFonts.inter(color: Colors.grey),
+                            ),
                           ],
                         ),
                       );
@@ -150,7 +272,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
 
                     return RefreshIndicator(
                       onRefresh: () async {
-                        context.read<AppointmentBloc>().add(FetchDailyAppointments());
+                        context.read<AppointmentBloc>().add(FetchAppointmentsByDate(_selectedDate));
                       },
                       child: ListView.builder(
                         padding: const EdgeInsets.all(20),
@@ -204,7 +326,8 @@ class _AgendaScreenState extends State<AgendaScreen> {
                                       'patientName': appointment.pacienteNombre,
                                     });
                                   },
-                                  leading: Container(                                    width: 50,
+                                  leading: Container(
+                                    width: 50,
                                     height: 50,
                                     decoration: BoxDecoration(
                                       color: _getStatusColor(appointment.estadoId).withValues(alpha: 0.1),

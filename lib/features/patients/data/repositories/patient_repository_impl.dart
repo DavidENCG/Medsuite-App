@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:medsuite_cmo/features/auth/domain/entities/identification_type.dart';
 import '../datasources/patient_local_data_source.dart';
 import '../datasources/patient_remote_data_source.dart';
 import '../../domain/entities/patient.dart';
@@ -48,7 +49,6 @@ class PatientRepositoryImpl implements PatientRepository {
       final response = await _remoteDataSource.searchPatients(query);
       return (response.patients, response.totalCount);
     } else {
-      // Local search filtering
       final cached = await _localDataSource.getCachedPatients();
       final filtered = cached.where((p) {
         return p.nombreCompleto.toLowerCase().contains(query.toLowerCase()) ||
@@ -66,5 +66,25 @@ class PatientRepositoryImpl implements PatientRepository {
   @override
   Future<bool> updatePatient(int id, Map<String, dynamic> data) async {
     return await _remoteDataSource.updatePatient(id, data);
+  }
+
+  @override
+  Future<List<IdentificationType>> getIdentificationTypes() async {
+    return await _remoteDataSource.getIdentificationTypes();
+  }
+
+  @override
+  Future<Map<String, dynamic>> createPatient({
+    required String nombre,
+    required String apellido,
+    required int tipoIdentificacionId,
+    required String identificacion,
+  }) async {
+    return await _remoteDataSource.createPatient({
+      'nombre': nombre,
+      'apellido': apellido,
+      'tipoIdentificacionId': tipoIdentificacionId,
+      'identificacion': identificacion,
+    });
   }
 }

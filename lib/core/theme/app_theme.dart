@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryBlue = Color(0xFF2563EB);
+  static const Color primaryColor = Color(0xFF39AFA6);
   static const Color backgroundLight = Color(0xFFF8FAFC);
   static const Color textDark = Color(0xFF1E293B);
   static const Color textLight = Color(0xFF64748B);
@@ -11,8 +11,8 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryBlue,
-        primary: primaryBlue,
+        seedColor: primaryColor,
+        primary: primaryColor,
         surface: backgroundLight,
       ),
       scaffoldBackgroundColor: backgroundLight,
@@ -60,7 +60,7 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryBlue,
+          backgroundColor: primaryColor,
           foregroundColor: Colors.white,
           elevation: 0,
           minimumSize: const Size(double.infinity, 50),
@@ -86,7 +86,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryBlue, width: 2),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
         labelStyle: GoogleFonts.inter(color: textLight),
         hintStyle: GoogleFonts.inter(color: textLight.withValues(alpha: 0.5)),

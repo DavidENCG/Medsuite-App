@@ -31,6 +31,8 @@ class AuthNeedsClinic extends AuthState {
   List<Object?> get props => [clinics];
 }
 
+class AuthNeedsClinicCreation extends AuthState {}
+
 class Authenticated extends AuthState {
   final String token;
   final String? fullName;

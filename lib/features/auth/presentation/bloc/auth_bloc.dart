@@ -21,6 +21,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   String? _tokenTemporal;
   List<Clinic> _clinics = [];
 
+  // Getters to expose internal state for registration/configuration screens
+  int? get userId => _userId;
+  int? get roleId => _roleId;
+  String? get tokenTemporal => _tokenTemporal;
+
   AuthBloc({required AuthRepository authRepository})
       : _authRepository = authRepository,
         super(AuthInitial()) {
@@ -28,6 +33,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LoginSubmitted>(_onLoginSubmitted);
     on<RoleSelected>(_onRoleSelected);
     on<ClinicSelected>(_onClinicSelected);
+    on<ClinicCreated>(_onClinicCreated);
     on<LogoutRequested>(_onLogoutRequested);
 
     // Iniciamos la validación automáticamente al crear el Bloc
@@ -94,7 +100,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final session = await _authRepository.login(event.email, event.password);
       
       // Si el login falló pero no lanzó excepción (ej: 401 manejado por validateStatus)
-      if (session is AuthResponseModel && session.token == null && !session.needsRole && !session.needsClinic) {
+      if (session is AuthResponseModel && session.token == null && !session.needsRole && !session.needsClinic && !session.needsClinicCreation) {
         // Buscamos un mensaje amigable
         emit(const AuthFailure('Credenciales incorrectas o usuario no autorizado'));
         return;
@@ -184,6 +190,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         tokenTemporal: session.tokenTemporal,
         needsClinic: session.needsClinic,
         needsRole: session.needsRole,
+        needsClinicCreation: session.needsClinicCreation,
         roles: session.roles,
         clinics: session.clinics ?? _clinics, // CLAVE: No perder la lista
       );
@@ -195,6 +202,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     } catch (e) {
       emit(AuthFailure('Error de comunicación'));
     }
+  }
+
+  Future<void> _onClinicCreated(
+    ClinicCreated event,
+    Emitter<AuthState> emit,
+  ) async {
+    await _handleSession(event.session, emit);
   }
 
   Future<void> _onLogoutRequested(
@@ -225,25 +239,35 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ? session.clinics! 
         : _clinics;
 
-    // RECUPERACIÓN DE NOMBRE: Si tenemos ID pero no el nombre
-    if ((_activeClinicName == null || _activeClinicName!.isEmpty) && _activeClinicId != null && _clinics.isNotEmpty) {
-      try {
-        final matched = _clinics.firstWhere((c) => c.id == _activeClinicId);
-        _activeClinicName = matched.nombre;
-      } catch (_) {}
-    }
+    print('--- AUTH REDIRECT DEBUG ---');
+    print('Needs Role Selection: ${session.needsRole}');
+    print('Needs Clinic Creation: ${session.needsClinicCreation}');
+    print('Needs Clinic Selection: ${session.needsClinic}');
+    print('Token: ${session.token != null ? 'Present' : 'Null'}');
+    print('Token Temporal: ${_tokenTemporal != null ? 'Present' : 'Null'}');
 
-    print('--- AUTH DEBUG ---');
-    print('Clinic Name: $_activeClinicName');
-    print('Clinics Count: ${_clinics.length}');
-
+    // 1. ¿Necesita elegir un rol? (Múltiples roles)
     if (session.needsRole) {
+      print('EMITTING: AuthNeedsRole');
       emit(AuthNeedsRole(session.roles ?? []));
-    } else if (session.needsClinic) {
+      return;
+    }
+    
+    // 2. ¿Tiene un solo rol pero NO tiene consultorios? (Flujo Médico Nuevo)
+    if (session.needsClinicCreation) {
+      print('EMITTING: AuthNeedsClinicCreation');
+      emit(AuthNeedsClinicCreation());
+      return;
+    } 
+    
+    // 3. ¿Tiene un solo rol y varios consultorios?
+    if (session.needsClinic) {
       List<Clinic> clinics = session.clinics ?? _clinics;
       
+      // Intentamos recuperar la lista de clínicas si no vino en este request
       if (clinics.isEmpty && _tokenTemporal != null) {
         try {
+          print('DEBUG: Fetching clinics list...');
           clinics = await _authRepository.getClinics(_tokenTemporal!).timeout(
             const Duration(seconds: 10),
             onTimeout: () => throw Exception('La carga de consultorios tardó demasiado'),
@@ -255,8 +279,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         }
       }
       
+      print('EMITTING: AuthNeedsClinic (count: ${clinics.length})');
       emit(AuthNeedsClinic(clinics));
-    } else if (session.token != null) {
+      return;
+    }
+    
+    // 4. Si no entró en ningún if anterior, el login es directo (ej. Paciente o Médico ya configurado)
+    if (session.token != null) {
+      print('EMITTING: Authenticated');
       emit(Authenticated(
         session.token!, 
         fullName: _fullName,
@@ -265,6 +295,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         clinics: _clinics,
       ));
     } else {
+      print('EMITTING: AuthFailure (Incomplete Auth)');
       emit(const AuthFailure('Respuesta de autenticación incompleta'));
     }
   }

@@ -41,6 +41,24 @@ class AppointmentRepositoryImpl implements AppointmentRepository {
   }
 
   @override
+  Future<List<Appointment>> getAppointmentsByDate(DateTime date) async {
+    final dateStr = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    final isOnline = await checkConnectivity();
+
+    if (isOnline) {
+      try {
+        final appointments = await _remoteDataSource.getAppointmentsByDate(date);
+        await _localDataSource.cacheAppointments(appointments, dateKey: dateStr);
+        return appointments;
+      } catch (_) {
+        return await _localDataSource.getCachedAppointments(dateKey: dateStr);
+      }
+    } else {
+      return await _localDataSource.getCachedAppointments(dateKey: dateStr);
+    }
+  }
+
+  @override
   Future<bool> updateAppointmentStatus(int citaId, int nuevoEstadoId, {String? notas}) async {
     final isOnline = await checkConnectivity();
 

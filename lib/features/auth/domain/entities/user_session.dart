@@ -11,6 +11,7 @@ class UserSession extends Equatable {
   final String? tokenTemporal;
   final bool needsRole;
   final bool needsClinic;
+  final bool needsClinicCreation;
   final List<Map<String, dynamic>>? roles;
   final List<Clinic>? clinics;
 
@@ -24,6 +25,7 @@ class UserSession extends Equatable {
     this.tokenTemporal,
     this.needsRole = false,
     this.needsClinic = false,
+    this.needsClinicCreation = false,
     this.roles,
     this.clinics,
   });
@@ -39,6 +41,7 @@ class UserSession extends Equatable {
         tokenTemporal,
         needsRole,
         needsClinic,
+        needsClinicCreation,
         roles,
         clinics,
       ];

@@ -13,15 +13,23 @@ class AuthResponseModel extends UserSession {
     super.tokenTemporal,
     super.needsRole = false,
     super.needsClinic = false,
+    super.needsClinicCreation = false,
     super.roles,
     super.clinics,
   });
 
   factory AuthResponseModel.fromJson(Map<String, dynamic> json) {
+    // DIAGNÓSTICO EXHAUSTIVO DEL LOGIN
+    print('--- DEBUG LOGIN RAW JSON ---');
+    print(json);
+    
     // The C# API returns { success, message, data?, token?, user? }
     final Map<String, dynamic> data = (json['data'] != null)
         ? json['data'] as Map<String, dynamic>
         : json;
+    
+    print('--- DEBUG LOGIN DATA PART ---');
+    print(data);
 
     final Map<String, dynamic> user = (json['user'] != null)
         ? json['user'] as Map<String, dynamic>
@@ -34,15 +42,16 @@ class AuthResponseModel extends UserSession {
     final clinicsData = data['consultoriosDisponibles'] ?? data['ConsultoriosDisponibles'];
 
     return AuthResponseModel(
-      userId: JsonUtils.forceIntNullable(data['id'] ?? data['usuarioId'] ?? user['id'] ?? user['UsuarioId'] ?? session['usuarioId'] ?? session['UsuarioId']),
+      userId: JsonUtils.forceIntNullable(data['id'] ?? data['usuarioId'] ?? user['id'] ?? user['UsuarioId'] ?? user['usuarioId'] ?? session['usuarioId'] ?? session['UsuarioId']),
       roleId: JsonUtils.forceIntNullable(data['rolId'] ?? data['RolId'] ?? user['rolId'] ?? user['RolId'] ?? session['rolId'] ?? session['RolId']),
-      activeClinicId: JsonUtils.forceIntNullable(data['consultorioId'] ?? data['ConsultorioId'] ?? session['consultorioId'] ?? session['ConsultorioId']),
+      activeClinicId: JsonUtils.forceIntNullable(data['consultorioId'] ?? data['ConsultorioId'] ?? user['consultorioId'] ?? user['ConsultorioId'] ?? session['consultorioId'] ?? session['ConsultorioId']),
       fullName: JsonUtils.forceString(user['nombreCompleto'] ?? user['NombreCompleto'] ?? session['nombreCompleto'] ?? session['NombreCompleto']),
-      activeClinicName: JsonUtils.forceString(data['consultorioNombre'] ?? data['ConsultorioNombre'] ?? session['consultorioNombre'] ?? session['ConsultorioNombre']),
+      activeClinicName: JsonUtils.forceString(data['consultorioNombre'] ?? data['ConsultorioNombre'] ?? user['consultorioNombre'] ?? user['ConsultorioNombre'] ?? session['consultorioNombre'] ?? session['ConsultorioNombre']),
       token: json['token'] as String?, 
       tokenTemporal: data['tokenTemporal'] as String? ?? data['TokenTemporal'] as String?,
-      needsRole: data['requiereSeleccionRol'] ?? data['RequiereSeleccionRol'] ?? false,
-      needsClinic: data['requiereSeleccionConsultorio'] ?? data['RequiereSeleccionConsultorio'] ?? false,
+      needsRole: json['requiresRoleSelection'] ?? json['RequiresRoleSelection'] ?? data['requiereSeleccionRol'] ?? data['RequiereSeleccionRol'] ?? false,
+      needsClinic: json['requiresClinicSelection'] ?? json['RequiresClinicSelection'] ?? data['requiereSeleccionConsultorio'] ?? data['RequiereSeleccionConsultorio'] ?? false,
+      needsClinicCreation: json['requiresClinicCreation'] ?? json['RequiresClinicCreation'] ?? data['requiereCrearConsultorio'] ?? data['RequiereCrearConsultorio'] ?? data['requiresCrearConsultorio'] ?? false,
       roles: rolesData is List
           ? rolesData.map((e) => Map<String, dynamic>.from(e as Map)).toList()
           : null,
@@ -61,6 +70,7 @@ class AuthResponseModel extends UserSession {
       'tokenTemporal': tokenTemporal,
       'requiereSeleccionRol': needsRole,
       'requiereSeleccionConsultorio': needsClinic,
+      'requiereCreacionConsultorio': needsClinicCreation,
       'rolesDisponibles': roles,
       'consultoriosDisponibles': clinics,
     };

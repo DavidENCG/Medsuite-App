@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../core/presentation/screens/main_shell_screen.dart';
 import '../bloc/dashboard_bloc.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -11,16 +12,20 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with RouteAware {
   @override
   void initState() {
     super.initState();
+    _refreshData();
+  }
+
+  void _refreshData() {
     context.read<DashboardBloc>().add(DashboardLoadRequested());
   }
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF2563EB);
+    final primaryColor = Theme.of(context).primaryColor;
     const backgroundGrey = Color(0xFFF1F5F9);
     const textDark = Color(0xFF1E293B);
 
@@ -29,7 +34,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: BlocBuilder<DashboardBloc, DashboardState>(
         builder: (context, state) {
           if (state is DashboardLoading) {
-            return const Center(child: CircularProgressIndicator(color: primaryBlue));
+            return Center(child: CircularProgressIndicator(color: primaryColor));
           }
 
           if (state is DashboardError) {
@@ -77,13 +82,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                Icon(Icons.location_on_rounded, size: 14, color: hasClinic ? primaryBlue : Colors.grey),
+                                Icon(Icons.location_on_rounded, size: 14, color: hasClinic ? primaryColor : Colors.grey),
                                 const SizedBox(width: 4),
                                 Text(
                                   hasClinic ? clinicName! : 'Consultorio no especificado',
                                   style: GoogleFonts.inter(
                                     fontSize: 13,
-                                    color: hasClinic ? primaryBlue : Colors.grey.shade600,
+                                    color: hasClinic ? primaryColor : Colors.grey.shade600,
                                     fontWeight: hasClinic ? FontWeight.w600 : FontWeight.normal,
                                   ),
                                 ),
@@ -108,7 +113,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           title: 'Citas Hoy',
                           value: summary.appointmentsToday.toString(),
                           icon: Icons.calendar_today,
-                          color: primaryBlue,
+                          color: primaryColor,
                         ),
                         _SummaryCard(
                           title: 'Pacientes Mes',
@@ -145,8 +150,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         ),
                         TextButton(
-                          onPressed: () {},
-                          child: const Text('Ver todas'),
+                          onPressed: () {
+                            // Cambiar a la pestaña de Agenda (índice 1)
+                            SwitchTabNotification(1).dispatch(context);
+                          },
+                          child: Text('Ver todas', style: TextStyle(color: primaryColor)),
                         ),
                       ],
                     ),
@@ -195,10 +203,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               leading: Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: primaryBlue.withValues(alpha: 0.1),
+                                  color: primaryColor.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.access_time, color: primaryBlue),
+                                child: Icon(Icons.access_time, color: primaryColor),
                               ),
                               title: Text(
                                 appointment['patient'],
@@ -209,7 +217,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 appointment['time'],
                                 style: GoogleFonts.inter(
                                   fontWeight: FontWeight.bold,
-                                  color: primaryBlue,
+                                  color: primaryColor,
                                 ),
                               ),
                             ),                        );

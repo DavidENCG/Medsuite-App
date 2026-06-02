@@ -8,6 +8,14 @@ import '../datasources/auth_datasource.dart';
 import '../../../appointments/data/datasources/clinic_datasource.dart';
 import '../models/auth_response_model.dart';
 
+import '../../domain/entities/identification_type.dart';
+import '../../domain/entities/registration_role.dart';
+import '../../domain/entities/registration_validation.dart';
+import '../models/registration_request_model.dart';
+
+import '../../domain/entities/location.dart';
+import '../models/clinic_creation_request.dart';
+
 class AuthRepositoryImpl implements AuthRepository {
   final AuthDataSource _remoteDataSource;
   final ClinicDataSource _clinicDataSource;
@@ -150,5 +158,65 @@ class AuthRepositoryImpl implements AuthRepository {
     // For now, simulate a valid subscription check (true = active, false = blocked)
     await Future.delayed(const Duration(milliseconds: 500));
     return true; 
+  }
+
+  @override
+  Future<List<IdentificationType>> getIdentificationTypes() async {
+    return await _remoteDataSource.getIdentificationTypes();
+  }
+
+  @override
+  Future<RegistrationValidation> validateRegistration({
+    required int tipoIdentificacionId,
+    required String identificacion,
+    required String email,
+  }) async {
+    return await _remoteDataSource.validateRegistration(
+      tipoIdentificacionId: tipoIdentificacionId,
+      identificacion: identificacion,
+      email: email,
+    );
+  }
+
+  @override
+  Future<List<RegistrationRole>> getRegistrationRoles() async {
+    return await _remoteDataSource.getRegistrationRoles();
+  }
+
+  @override
+  Future<void> register(RegistrationRequest request) async {
+    return await _remoteDataSource.register(request);
+  }
+
+  @override
+  Future<void> sendWelcomeEmail({
+    required String email,
+    required String nombre,
+    required String usuario,
+    required String password,
+  }) async {
+    return await _remoteDataSource.sendWelcomeEmail(
+      email: email,
+      nombre: nombre,
+      usuario: usuario,
+      password: password,
+    );
+  }
+
+  @override
+  Future<List<Country>> getCountries() async {
+    return await _remoteDataSource.getCountries();
+  }
+
+  @override
+  Future<List<City>> getCitiesByCountry(int countryId) async {
+    return await _remoteDataSource.getCitiesByCountry(countryId);
+  }
+
+  @override
+  Future<UserSession> createClinic(ClinicCreationRequest request) async {
+    final session = await _remoteDataSource.createClinic(request);
+    await _saveSession(session);
+    return session;
   }
 }

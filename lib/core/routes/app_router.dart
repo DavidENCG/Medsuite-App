@@ -7,6 +7,7 @@ import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/role_selection_screen.dart';
 import '../../features/auth/presentation/screens/clinic_selection_screen.dart';
+import '../../features/auth/presentation/screens/register/clinic_creation_screen.dart';
 import '../../features/auth/presentation/screens/subscription_blocked_screen.dart';
 import '../../features/core/presentation/screens/main_shell_screen.dart';
 import '../../features/patients/domain/entities/patient.dart';
@@ -43,30 +44,25 @@ class AppRouter {
   AppRouter(this.authBloc);
 
   late final GoRouter router = GoRouter(
-    initialLocation: '/splash', // Ahora iniciamos en Splash
+    initialLocation: '/splash',
     refreshListenable: GoRouterRefreshStream(authBloc.stream),
     redirect: (context, state) {
       final authState = authBloc.state;
       final isGoingToLogin = state.matchedLocation == '/login';
       final isGoingToSplash = state.matchedLocation == '/splash';
 
-      // 1. Estado Inicial (Solo al arrancar la App)
       if (authState is AuthInitial) {
         return isGoingToSplash ? null : '/splash';
       }
 
-      // 2. Mientras carga, permitimos que se quede en la pantalla actual 
-      // para mostrar el indicador de carga (CircularProgressIndicator)
       if (authState is AuthLoading) {
         return null; 
       }
 
-      // 3. Si NO está autenticado (y no está ya cargando)
       if (authState is AuthUnauthenticated || authState is AuthFailure) {
         return isGoingToLogin ? null : '/login';
       }
 
-      // 4. Casos especiales de autenticación (Rol, Clínica, Bloqueo)
       if (authState is AuthNeedsRole) {
         return state.matchedLocation == '/select-role' ? null : '/select-role';
       }
@@ -75,17 +71,20 @@ class AppRouter {
         return state.matchedLocation == '/select-clinic' ? null : '/select-clinic';
       }
 
+      if (authState is AuthNeedsClinicCreation) {
+        return state.matchedLocation == '/create-clinic' ? null : '/create-clinic';
+      }
+
       if (authState is AuthSubscriptionBlocked) {
         return state.matchedLocation == '/blocked' ? null : '/blocked';
       }
 
-      // 5. Si está plenamente autenticado
       if (authState is Authenticated) {
-        // Si está en pantallas de auth o splash, mandarlo al Dashboard (/)
         final bool isAtAuthScreen = isGoingToLogin || 
                                     isGoingToSplash ||
                                     state.matchedLocation == '/select-role' || 
                                     state.matchedLocation == '/select-clinic' ||
+                                    state.matchedLocation == '/create-clinic' ||
                                     state.matchedLocation == '/blocked';
         if (isAtAuthScreen) {
           return '/';
@@ -118,6 +117,10 @@ class AppRouter {
           final clinics = (authState is AuthNeedsClinic) ? authState.clinics : <Clinic>[];
           return ClinicSelectionScreen(clinics: clinics);
         },
+      ),
+      GoRoute(
+        path: '/create-clinic',
+        builder: (context, state) => const ClinicCreationScreen(),
       ),
       GoRoute(
         path: '/blocked',

@@ -12,6 +12,13 @@ abstract class AppointmentEvent extends Equatable {
 
 class FetchDailyAppointments extends AppointmentEvent {}
 
+class FetchAppointmentsByDate extends AppointmentEvent {
+  final DateTime date;
+  const FetchAppointmentsByDate(this.date);
+  @override
+  List<Object?> get props => [date];
+}
+
 class UpdateAppointmentStatus extends AppointmentEvent {
   final int citaId;
   final int nuevoEstadoId;
@@ -41,9 +48,14 @@ class AppointmentsLoading extends AppointmentState {}
 class AppointmentsLoaded extends AppointmentState {
   final List<Appointment> appointments;
   final bool isOffline;
-  const AppointmentsLoaded({required this.appointments, this.isOffline = false});
+  final DateTime selectedDate;
+  const AppointmentsLoaded({
+    required this.appointments, 
+    this.isOffline = false,
+    required this.selectedDate,
+  });
   @override
-  List<Object?> get props => [appointments, isOffline];
+  List<Object?> get props => [appointments, isOffline, selectedDate];
 }
 class AppointmentsError extends AppointmentState {
   final String message;
@@ -60,6 +72,7 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
       : _repository = repository,
         super(AppointmentsInitial()) {
     on<FetchDailyAppointments>(_onFetchDailyAppointments);
+    on<FetchAppointmentsByDate>(_onFetchAppointmentsByDate);
     on<UpdateAppointmentStatus>(_onUpdateAppointmentStatus);
     on<SyncOfflineChanges>(_onSyncOfflineChanges);
   }
@@ -68,11 +81,22 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     FetchDailyAppointments event,
     Emitter<AppointmentState> emit,
   ) async {
+    add(FetchAppointmentsByDate(DateTime.now()));
+  }
+
+  Future<void> _onFetchAppointmentsByDate(
+    FetchAppointmentsByDate event,
+    Emitter<AppointmentState> emit,
+  ) async {
     emit(AppointmentsLoading());
     try {
-      final appointments = await _repository.getTodaysAppointments();
+      final appointments = await _repository.getAppointmentsByDate(event.date);
       final isOnline = await _repository.checkConnectivity();
-      emit(AppointmentsLoaded(appointments: appointments, isOffline: !isOnline));
+      emit(AppointmentsLoaded(
+        appointments: appointments, 
+        isOffline: !isOnline,
+        selectedDate: event.date,
+      ));
     } catch (e) {
       emit(AppointmentsError(e.toString()));
     }
@@ -85,13 +109,14 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     final currentState = state;
     if (currentState is AppointmentsLoaded) {
       try {
+        final selectedDate = currentState.selectedDate;
         await _repository.updateAppointmentStatus(
           event.citaId,
           event.nuevoEstadoId,
           notas: event.notas,
         );
-        // Refresh after update
-        add(FetchDailyAppointments());
+        // Refresh for the same date
+        add(FetchAppointmentsByDate(selectedDate));
       } catch (e) {
         emit(AppointmentsError(e.toString()));
       }
@@ -103,6 +128,11 @@ class AppointmentBloc extends Bloc<AppointmentEvent, AppointmentState> {
     Emitter<AppointmentState> emit,
   ) async {
     await _repository.syncPendingChanges();
-    add(FetchDailyAppointments());
+    final currentState = state;
+    if (currentState is AppointmentsLoaded) {
+      add(FetchAppointmentsByDate(currentState.selectedDate));
+    } else {
+      add(FetchDailyAppointments());
+    }
   }
 }

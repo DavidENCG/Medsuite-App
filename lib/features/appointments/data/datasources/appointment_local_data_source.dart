@@ -2,8 +2,8 @@ import 'package:hive/hive.dart';
 import '../models/appointment_model.dart';
 
 abstract class AppointmentLocalDataSource {
-  Future<void> cacheAppointments(List<AppointmentModel> appointments);
-  Future<List<AppointmentModel>> getCachedAppointments();
+  Future<void> cacheAppointments(List<AppointmentModel> appointments, {String? dateKey});
+  Future<List<AppointmentModel>> getCachedAppointments({String? dateKey});
   Future<void> savePendingChange(int citaId, int estadoId, String? notas);
   Future<List<Map<String, dynamic>>> getPendingChanges();
   Future<void> clearPendingChanges();
@@ -14,16 +14,16 @@ class AppointmentLocalDataSourceImpl implements AppointmentLocalDataSource {
   static const String _pendingChangesBox = 'pending_changes_box';
 
   @override
-  Future<void> cacheAppointments(List<AppointmentModel> appointments) async {
+  Future<void> cacheAppointments(List<AppointmentModel> appointments, {String? dateKey}) async {
     final box = await Hive.openBox(_appointmentsBox);
     final data = appointments.map((e) => e.toJson()).toList();
-    await box.put('today', data);
+    await box.put(dateKey ?? 'today', data);
   }
 
   @override
-  Future<List<AppointmentModel>> getCachedAppointments() async {
+  Future<List<AppointmentModel>> getCachedAppointments({String? dateKey}) async {
     final box = await Hive.openBox(_appointmentsBox);
-    final List? data = box.get('today');
+    final List? data = box.get(dateKey ?? 'today');
     if (data != null) {
       return data.map((e) => AppointmentModel.fromJson(Map<String, dynamic>.from(e))).toList();
     }

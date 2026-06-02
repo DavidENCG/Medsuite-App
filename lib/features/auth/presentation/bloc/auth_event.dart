@@ -37,4 +37,12 @@ class ClinicSelected extends AuthEvent {
   List<Object?> get props => [clinicId];
 }
 
+class ClinicCreated extends AuthEvent {
+  final UserSession session;
+  const ClinicCreated(this.session);
+
+  @override
+  List<Object?> get props => [session];
+}
+
 class LogoutRequested extends AuthEvent {}

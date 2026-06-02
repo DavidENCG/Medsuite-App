@@ -12,33 +12,34 @@ class DashboardSummaryModel extends DashboardSummary {
   });
 
   factory DashboardSummaryModel.fromJson(Map<String, dynamic> json) {
-    // Handle both direct data and wrapped data { success: true, data: { ... } }
-    final Map<String, dynamic> data = (json.containsKey('data') && json['data'] != null)
+    // Intentamos extraer el payload real (ya sea que venga envuelto en 'data' o sea el objeto raíz)
+    final Map<String, dynamic> data = (json.containsKey('data') && json['data'] != null && json['data'] is Map)
         ? Map<String, dynamic>.from(json['data'] as Map)
-        : (json.containsKey('Data') && json['Data'] != null) 
+        : (json.containsKey('Data') && json['Data'] != null && json['Data'] is Map) 
             ? Map<String, dynamic>.from(json['Data'] as Map)
             : json;
 
-    final upcomingRaw = data['upcomingAppointments'] ?? data['UpcomingAppointments'] ?? data['proximasCitas'] ?? data['ProximasCitas'];
+    final upcomingRaw = data['upcomingAppointments'] ?? data['UpcomingAppointments'] ?? 
+                        data['proximasCitas'] ?? data['ProximasCitas'] ?? 
+                        data['citas'] ?? data['Citas'];
     
     List<Map<String, dynamic>> parsedUpcoming = [];
     if (upcomingRaw is List) {
        parsedUpcoming = upcomingRaw.map((e) {
          final map = Map<String, dynamic>.from(e as Map);
-         // Normalizamos las llaves internamente para que la UI no tenga que lidiar con Casing
          return {
-           'time': map['time'] ?? map['Time'] ?? map['horaCita'] ?? map['HoraCita'] ?? '',
-           'patient': map['patient'] ?? map['Patient'] ?? map['pacienteNombre'] ?? map['PacienteNombre'] ?? 'Paciente',
-           'type': map['type'] ?? map['Type'] ?? map['motivoConsulta'] ?? map['MotivoConsulta'] ?? 'Consulta',
+           'time': map['time'] ?? map['Time'] ?? map['horaCita'] ?? map['HoraCita'] ?? map['hora'] ?? '',
+           'patient': map['patient'] ?? map['Patient'] ?? map['pacienteNombre'] ?? map['PacienteNombre'] ?? map['paciente'] ?? 'Paciente',
+           'type': map['type'] ?? map['Type'] ?? map['motivoConsulta'] ?? map['MotivoConsulta'] ?? map['tipo'] ?? 'Consulta',
          };
        }).toList();
     }
 
     return DashboardSummaryModel(
-      appointmentsToday: JsonUtils.forceInt(data['appointmentsToday'] ?? data['AppointmentsToday']),
-      newPatientsThisMonth: JsonUtils.forceInt(data['newPatientsThisMonth'] ?? data['NewPatientsThisMonth']),
-      pendingMedicalRecords: JsonUtils.forceInt(data['pendingMedicalRecords'] ?? data['PendingMedicalRecords']),
-      monthlyRevenue: (data['monthlyRevenue'] ?? data['MonthlyRevenue'] ?? 0).toDouble(),
+      appointmentsToday: JsonUtils.forceInt(data['appointmentsToday'] ?? data['AppointmentsToday'] ?? data['citasHoy'] ?? data['CitasHoy'] ?? data['totalCitas'] ?? 0),
+      newPatientsThisMonth: JsonUtils.forceInt(data['newPatientsThisMonth'] ?? data['NewPatientsThisMonth'] ?? data['pacientesMes'] ?? data['PacientesMes'] ?? 0),
+      pendingMedicalRecords: JsonUtils.forceInt(data['pendingMedicalRecords'] ?? data['PendingMedicalRecords'] ?? data['historiasPendientes'] ?? data['HistoriasPendientes'] ?? 0),
+      monthlyRevenue: (data['monthlyRevenue'] ?? data['MonthlyRevenue'] ?? data['ingresosMes'] ?? data['IngresosMes'] ?? 0).toDouble(),
       upcomingAppointments: parsedUpcoming,
     );
   }

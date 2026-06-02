@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:medsuite_cmo/features/auth/presentation/screens/register/register_screen.dart';
 import '../../../../core/utils/medsuite_toast.dart';
 import '../bloc/auth_bloc.dart';
 
@@ -33,14 +34,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Paleta de colores Light / Corporativa
-    const primaryBlue = Color(0xFF2563EB);
-    const backgroundGrey = Color(0xFFF1F5F9); // Fondo claro contrastado
+    const primaryColor = Color(0xFF39AFA6);
+    const backgroundBlue = Color(0xFF1B448C);
+    const cardColor = Colors.white;
     const textDark = Color(0xFF1E293B);
     const textLight = Color(0xFF64748B);
 
     return Scaffold(
-      backgroundColor: backgroundGrey,
+      backgroundColor: backgroundBlue,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthFailure) {
@@ -54,42 +55,42 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Logo Oficial MedSuite (Visible sobre fondo claro)
-                  Image.asset(
-                    'assets/images/logo_medsuite.png',
-                    height: 120,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.health_and_safety_rounded, color: primaryBlue, size: 80);
-                    },
-                  ),
-                  const SizedBox(height: 48),
-
-                  // Contenedor del Formulario
+                  // Contenedor del Formulario (Blanco)
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(28),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 25,
+                          offset: const Offset(0, 12),
                         ),
                       ],
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // Logo dentro de la tarjeta
+                        Image.asset(
+                          'assets/images/logo_medsuite.png',
+                          height: 100,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.health_and_safety_rounded, color: primaryColor, size: 60);
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        
                         Text(
                           'Bienvenido',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.poppins(
-                            fontSize: 22,
+                            fontSize: 24,
                             fontWeight: FontWeight.bold,
                             color: textDark,
                           ),
@@ -109,10 +110,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           'USUARIO',
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: textLight,
-                            letterSpacing: 1,
+                            letterSpacing: 1.2,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -121,9 +122,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: GoogleFonts.inter(color: textDark),
                           decoration: InputDecoration(
                             hintText: 'V-12345678',
+                            hintStyle: GoogleFonts.inter(color: textLight.withValues(alpha: 0.5)),
                             prefixIcon: const Icon(Icons.person_outline, color: textLight),
                             filled: true,
-                            fillColor: backgroundGrey,
+                            fillColor: const Color(0xFFF1F5F9),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide.none,
@@ -136,10 +138,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(
                           'CONTRASEÑA',
                           style: GoogleFonts.inter(
-                            fontSize: 12,
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: textLight,
-                            letterSpacing: 1,
+                            letterSpacing: 1.2,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -149,6 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: GoogleFonts.inter(color: textDark),
                           decoration: InputDecoration(
                             hintText: '••••••••',
+                            hintStyle: GoogleFonts.inter(color: textLight.withValues(alpha: 0.5)),
                             prefixIcon: const Icon(Icons.lock_outline, color: textLight),
                             suffixIcon: IconButton(
                               icon: Icon(
@@ -162,7 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               },
                             ),
                             filled: true,
-                            fillColor: backgroundGrey,
+                            fillColor: const Color(0xFFF1F5F9),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide.none,
@@ -176,13 +179,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           builder: (context, state) {
                             if (state is AuthLoading) {
                               return const Center(
-                                child: CircularProgressIndicator(color: primaryBlue),
+                                child: CircularProgressIndicator(color: primaryColor),
                               );
                             }
                             return ElevatedButton(
                               onPressed: _submitLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: primaryBlue,
+                                backgroundColor: primaryColor,
                                 foregroundColor: Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
@@ -200,15 +203,42 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           },
                         ),
+                        const SizedBox(height: 24),
+                        
+                        // Botones de Registro y Ayuda dentro de la Card
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              '¿No tienes cuenta?',
+                              style: GoogleFonts.inter(color: textLight, fontSize: 13),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                                );
+                              },
+                              child: Text(
+                                'Registrarme',
+                                style: GoogleFonts.inter(
+                                  color: primaryColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        TextButton(
+                          onPressed: () {},
+                          child: Text(
+                            '¿Problemas para acceder?',
+                            style: GoogleFonts.inter(color: textLight, fontSize: 12),
+                          ),
+                        ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  TextButton(
-                    onPressed: () {},
-                    child: Text(
-                      '¿Problemas para acceder?',
-                      style: GoogleFonts.inter(color: textLight),
                     ),
                   ),
                 ],
